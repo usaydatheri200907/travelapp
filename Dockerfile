@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package.json and yarn.lock
 COPY package.json yarn.lock ./
 
-# Remove existing yarn binary if it exists, then install yarn globally
-RUN rm -f /usr/local/bin/yarn && npm install -g yarn
+# Remove existing yarn binary if it exists, then install yarn globally with --force
+RUN rm -f /usr/local/bin/yarn && npm install -g yarn --force
 
 # Install dependencies
 RUN yarn install
