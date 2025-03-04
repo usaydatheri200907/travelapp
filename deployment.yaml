@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name:  travel-agency-app
-        image: your-image
+        image: travel-agency-app
         ports:
         - containerPort: 80
