@@ -1,19 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: react-travel-app
+  name:  travel-agency-app
+  namespace: default  # Or whatever namespace you're using
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: react-travel-app
+      app:  travel-agency-app
   template:
     metadata:
       labels:
-        app: react-travel-app
+        app:  travel-agency-app
     spec:
       containers:
-      - name: travel-agency-app
-        image: sholly333/travel-agency-app:latest
+      - name:  travel-agency-app
+        image: your-image
         ports:
         - containerPort: 80
