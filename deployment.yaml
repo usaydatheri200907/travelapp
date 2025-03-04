@@ -1,18 +1,19 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: react-travel-agency
-  namespace: argocd
+  name: react-travel-app
 spec:
-  project: default
-  source:
-    repoURL: 'https://github.com/etaoko333/react-travel-agency-website.git'
-    path: k8s
-    targetRevision: HEAD
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  replicas: 2
+  selector:
+    matchLabels:
+      app: react-travel-app
+  template:
+    metadata:
+      labels:
+        app: react-travel-app
+    spec:
+      containers:
+      - name: travel-agency-app
+        image: sholly333/travel-agency-app:latest
+        ports:
+        - containerPort: 80
