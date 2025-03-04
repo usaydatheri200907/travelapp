@@ -19,7 +19,7 @@ pipeline {
 
         stage('Checkout from Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/etaoko333/react-travel-agency-website.git'
+                git branch: 'master', url: 'https://github.com/etaoko333/react-travel-agency-website.git'
             }
         }
 
@@ -28,8 +28,8 @@ pipeline {
                 withSonarQubeEnv('sonar-server') {
                     sh ''' 
                     $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=React-Travel_App \
-                        -Dsonar.projectKey=React-Travel_App
+                        -Dsonar.projectName=react-travel-app \
+                        -Dsonar.projectKey=react-travel-appp
                     '''
                 }
             }
@@ -52,6 +52,21 @@ pipeline {
         stage('Trivy FS Scan') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
+            }
+        }
+
+        stage('Install Docker Compose') {
+            steps {
+                sh '''
+                # Install Docker Compose if not already installed
+                if ! [ -x "$(command -v docker-compose)" ]; then
+                    echo "Docker Compose not found, installing..."
+                    sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                    sudo chmod +x /usr/local/bin/docker-compose
+                else
+                    echo "Docker Compose is already installed"
+                fi
+                '''
             }
         }
 
@@ -84,6 +99,31 @@ pipeline {
                 '''
             }
         }
+
+        stage('K8s Deploy') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-credentials-id', region: 'us-west-1') {
+                        sh '''
+                        aws eks update-kubeconfig --region us-west-1 --name devopsola-cluster
+                        kubectl config current-context
+                        kubectl apply -f deployment.yaml
+                        kubectl apply -f service.yaml
+                        sleep 20
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                kubectl get pods -n travel-app
+                kubectl get services -n travel-app
+                '''
+            }
+        }
     }
 
     post {
@@ -94,7 +134,7 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 pipelineStatus = pipelineStatus.toUpperCase()
-                
+
                 // Set the banner color based on the status
                 def bannerColor = pipelineStatus == 'SUCCESS' ? 'green' : 'red'
 
