@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  travel-agency-app
+  name:  travelapp
   namespace: default  # Or whatever namespace you're using
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app:  travel-agency-app
+      app:  travel-app
   template:
     metadata:
       labels:
-        app:  travel-agency-app
+        app:  travel-app
     spec:
       containers:
-      - name:  travel-agency-app
+      - name:  travel-app
         image: travel-agency-app
         ports:
         - containerPort: 80
