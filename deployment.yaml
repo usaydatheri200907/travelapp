@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  travelapp
+  name:  travel-app
   namespace: default  # Or whatever namespace you're using
 spec:
   replicas: 1
