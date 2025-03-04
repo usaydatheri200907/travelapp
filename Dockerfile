@@ -4,8 +4,8 @@ FROM node:18 as build
 # Set the working directory
 WORKDIR /app
 
-# Install Yarn globally (if not already included)
-RUN npm install -g yarn
+# Check if Yarn is installed, if not install it
+RUN if ! command -v yarn &> /dev/null; then npm install -g yarn; fi
 
 # Copy package.json and yarn.lock
 COPY package.json yarn.lock ./
