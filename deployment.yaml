@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: travel-agency-app
+  name: react-travel-agency
   namespace: argocd
 spec:
   project: default
