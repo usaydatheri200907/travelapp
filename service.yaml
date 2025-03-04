@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: react-travel-app-service
+  name: travel-app-service
 spec:
   selector:
-    app: react-travel-app
+    app: travel-app
   ports:
     - protocol: TCP
       port: 80
