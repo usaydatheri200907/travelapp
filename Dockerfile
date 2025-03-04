@@ -4,11 +4,14 @@ FROM node:18 as build
 # Set the working directory
 WORKDIR /app
 
+# Install Yarn globally (if not already included)
+RUN npm install -g yarn
+
 # Copy package.json and yarn.lock
 COPY package.json yarn.lock ./
 
-# Install dependencies
-RUN yarn install
+# Install dependencies (with frozen lockfile to avoid changes)
+RUN yarn install --frozen-lockfile
 
 # Copy the rest of the application code
 COPY . .
