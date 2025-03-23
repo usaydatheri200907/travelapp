@@ -1,0 +1,31 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+before_script:
+  - docker info
+
+build:
+  stage: build
+  script:
+    - docker build -t travel-app .
+    - docker tag travel-app:latest registry.gitlab.com/Osie/react-travel-agency-website:latest
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker push registry.gitlab.com/Osie/react-travel-agency-website:latest
+
+test:
+  stage: test
+  script:
+    - docker run --rm registry.gitlab.com/Osie/react-travel-agency-website:latest npm test
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernetes/deployment-service.yaml
+  environment:
+    name: production
+    url: http://your-app-url.com
