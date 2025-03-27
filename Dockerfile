@@ -1,32 +1,21 @@
-# Use an official Node.js runtime as the base image
-FROM node:18 as build
+# Use newer Node image (comes with updated Yarn)
+FROM node:20 AS build
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and yarn.lock
+# First copy only package files
 COPY package.json yarn.lock ./
 
-# Remove existing yarn binary if it exists, then install yarn globally with --force
-RUN rm -f /usr/local/bin/yarn && npm install -g yarn --force
+# Clean cache and install (without frozen-lockfile first)
+RUN yarn cache clean && yarn install
 
-# Install dependencies
-RUN yarn install
-
-# Copy the rest of the application code
+# Then copy everything else
 COPY . .
 
-# Build the application
+# Now run build
 RUN yarn build
 
-# Use a lightweight web server to serve the built files
 FROM nginx:alpine
-
-# Copy the built files from the build stage
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Expose port 80
 EXPOSE 80
-
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
