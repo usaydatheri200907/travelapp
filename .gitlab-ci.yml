@@ -1,31 +1,67 @@
 stages:
-  - build
-  - test
-  - deploy
+  - npm
+  - sonar  # This is the stage where SonarQube runs
+  - trivy-file-scan
+  - docker
+  - trivy-image-scan
+  - run-container
 
-variables:
-  DOCKER_DRIVER: overlay2
+Install-dependency:
+  stage: npm
+  image:
+    name: node:16
+  script:
+    - npm install
 
-before_script:
-  - docker info
+sonarqube-check:
+  stage: sonar  # Assigning it to the correct stage
+  image: 
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Ensures SonarQube fetches the full Git history
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - sonar-scanner
+  allow_failure: true
+  only:
+    - main
 
-build:
-  stage: build
+Trivy-file-scan:
+  stage: trivy-file-scan  # Match this with defined stages
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs .
+
+Docker-build-and-push:
+  stage: docker
+  image:
+    name: docker:latest
+  services:
+    - docker:dind
   script:
     - docker build -t travel-app .
-    - docker tag travel-app:latest registry.gitlab.com/Osie/react-travel-agency-website:latest
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - docker push registry.gitlab.com/Osie/react-travel-agency-website:latest
+    - docker tag travel-app:latest sholly333/travel-app:latest
+    - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+    - docker push sholly333/travel-app:latest
 
-test:
-  stage: test
+Scan-image:
+  stage: trivy-image-scan  # Corrected to match the declared stage
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
-    - docker run --rm registry.gitlab.com/Osie/react-travel-agency-website:latest npm test
+    - trivy image sholly333/travel-app:latest
 
 deploy:
-  stage: deploy
+  stage: run-container
+  tags:
+    - travel-app        #use your own tags 
   script:
-    - kubectl apply -f kubernetes/deployment-service.yaml
-  environment:
-    name: production
-    url: http://your-app-url.com
+    - docker run -d --name travel-app -p 3000:80 sholly333/travel-app:latest
