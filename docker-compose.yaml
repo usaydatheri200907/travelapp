@@ -1,8 +1,0 @@
-version: '3'
-services:
-  frontend:
-    build: .
-    image: travel-agency-app  # Explicitly specify the image name
-    ports:
-      - "80:80"
-    restart: always

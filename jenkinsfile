@@ -1,156 +1,35 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'jdk17'
-        nodejs 'node16'
-    }
-
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        SONARQUBE_ENV = 'SonarQube'  // Ensure this matches your configuration name in Jenkins
+        DOCKER_IMAGE_NAME = 'travelapp'  // Define your Docker image name
+        DOCKER_TAG = 'latest'  // You can also use a version here like '1.0.0'
     }
 
     stages {
-        stage('Clean Workspace') {
+        stage('Clone') {
             steps {
-                cleanWs()
-            }
-        }
-
-        stage('Checkout from Git') {
-            steps {
-                git branch: 'master', url: 'https://github.com/etaoko333/react-travel-agency-website.git'
+                checkout scm
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' 
-                    $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=react-travel-app \
-                        -Dsonar.projectKey=react-travel-appp
-                    '''
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'sonar-scanner -Dsonar.login=squ_e09dcbc62de4d056bb07f789aac7bb32740efe45'
                 }
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
-                }
-            }
-        }
-
-        stage('Install NPM Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Trivy FS Scan') {
-            steps {
-                sh 'trivy fs . > trivyfs.txt'
-            }
-        }
-
-        stage('Install Docker Compose') {
-            steps {
-                sh '''
-                # Install Docker Compose if not already installed
-                if ! [ -x "$(command -v docker-compose)" ]; then
-                    echo "Docker Compose not found, installing..."
-                    sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                    sudo chmod +x /usr/local/bin/docker-compose
-                else
-                    echo "Docker Compose is already installed"
-                fi
-                '''
-            }
-        }
-
-        stage('Docker Build & Push') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh '''
-                        set -e  # Exit on error
-                        docker-compose build
-                        docker tag travel-agency-app sholly333/travel-agency-app:latest
-                        docker push sholly333/travel-agency-app:latest
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Trivy Image Scan') {
-            steps {
-                sh 'trivy image sholly333/travel-agency-app:latest > trivy.txt'
-            }
-        }
-
-        stage('Deploy to Container') {
-            steps {
-                sh '''
-                docker-compose down || true
-                docker-compose up -d
-                '''
-            }
-        }
-
-        stage('K8s Deploy') {
-            steps {
-                script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-creds', // ID of the AWS credentials in Jenkins
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
-                        sh '''
-                        # Set AWS credentials
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        export AWS_REGION=${AWS_REGION}
-
-                        # Update kubeconfig
-                        aws eks update-kubeconfig --region ${AWS_REGION} --name devopsola-cluster
-
-                        # Apply the Kubernetes resources
-                        kubectl apply -f deployment.yaml -n travel-app
-                        kubectl apply -f service.yaml -n travel-app
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-creds', // ID of the AWS credentials in Jenkins
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
-                        sh '''
-                        # Set AWS credentials
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        export AWS_REGION=${AWS_REGION}
-
-                        # Update kubeconfig
-                        aws eks update-kubeconfig --region ${AWS_REGION} --name devopsola-cluster
-
-                        # Verify the deployment
-                        kubectl get pods -n travel-app
-                        kubectl get services -n travel-app
-                        '''
-                    }
+                    // Build the Docker image using the Dockerfile
+                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
                 }
             }
         }
     }
+}
+
