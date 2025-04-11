@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image using the Dockerfile
-                    sh 'DOCKER_BUILDKIT=0 docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
+                    sh 'sudo env DOCKER_BUILDKIT=0 docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
                 }
             }
         }
