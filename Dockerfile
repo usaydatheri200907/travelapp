@@ -1,18 +1,21 @@
-# Use newer Node image (comes with updated Yarn)
+# Use a newer Node image
 FROM node:20 AS build
 
 WORKDIR /app
 
-# Copy only package files first to leverage Docker cache
+# Copy package files first
 COPY package.json yarn.lock ./
 
-# Clean cache and install dependencies
-RUN yarn cache clean && yarn install --frozen-lockfile
+# Clean Yarn cache and install dependencies
+RUN yarn cache clean && yarn install --no-lockfile
+
+# Alternatively, you can upgrade Yarn and install dependencies like this:
+# RUN npm install -g yarn@latest && yarn cache clean && yarn install --frozen-lockfile
 
 # Copy the rest of the application files
 COPY . .
 
-# Build the app
+# Build the application
 RUN yarn build
 
 # Use Nginx to serve the build output
