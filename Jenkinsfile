@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'jenkein-node' }
 
     environment {
         SONARQUBE_ENV = 'SonarQube'  // Ensure this matches your configuration name in Jenkins
