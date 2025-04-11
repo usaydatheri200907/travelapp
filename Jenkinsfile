@@ -18,7 +18,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh 'sonar-scanner -Dsonar.login=sqp_7acb4420af8a71800e39c7dc75bc2859f985b55d'
+                    sh 'sonar-scanner -Dsonar.login=squ_74d599428ed1c2f15988af0514cafef8b53d2abf'
                 }
             }
         }
